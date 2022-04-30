@@ -49,19 +49,26 @@ def create_tables(tickers, conn):
     except (Exception, psycopg2.DatabaseError) as error:
         print(error)
     
-def insert_one(ticker, df, conn):
-    cur = conn.cursor()
-    ticker = ticker.replace('^', '_')
-    cols = df.columns
-    
-    for col in df.columns:
+def insert_data(ticker, df, conn):
+    try:
+        cur = conn.cursor()
+        ticker = ticker.replace('^', '_')
+        cols = df.columns
+        arg_string = ",".join("('%s', '%s', '%s', '%s', '%s')" % (str(a).split()[0], b, c, d, e) for a, (b, c, d, e) in data_df.iterrows())
+
         cur.execute(
             """
-            INSERT INTO {ticker}(date, close, sma_20, sma_60, sma_120)
-            VALUES({df})
-            """.format(ticker, )
+            INSERT INTO {0}(date, close, sma_20, sma_60, sma_120)
+            VALUES
+            """.format(ticker) + arg_string
         )
-
+        conn.commit()
+        cur.close()
+    except (Exception, psycopg2.DatabaseError) as error:
+        print(error)
+    finally:
+        if conn is not None:
+            conn.close()
 
 if __name__ == "__main__":
     tickers = ["^KS11"]
@@ -79,7 +86,6 @@ if __name__ == "__main__":
     data_df = data_df.dropna()
     data_df = data_df.round(decimals=2)
     
-    
     conn = connect()
     create_tables(tickers, conn)
-    insert_one(tickers[0], data_df, conn)
+    insert_data(tickers[0], data_df, conn)
