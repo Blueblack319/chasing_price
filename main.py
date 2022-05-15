@@ -1,91 +1,62 @@
-from config import config
-import psycopg2
 import yfinance as yf
 import datetime as dt
+from db import connect, create_tables, insert_data
+import pandas as pd
+import numpy as np
+from etfdb import extract_etfs_by_vol
 
 
-def connect():
-    """ Connect to the PostgreSQL database server """
-    conn = None
-    try:
-        params = config()
-        print("Connecting to the PostgreSQL database...")
+def get_comp(df, interval):
+    df_comp = np.array([])
 
-        conn = psycopg2.connect(**params)
-
-        cur = conn.cursor()
-
-        print("PostgreSQL database version:")
-        cur.execute("SELECT version()")
-
-        db_version = cur.fetchone()
-        print(db_version)
-
-        cur.close()
-    except (Exception, psycopg2.DatabaseError) as error:
-        print(error)
-
-    finally:
-        if conn is not None:
-            return conn
-
-def create_tables(tickers, conn):
-    try:
-        cur = conn.cursor()
-        for ticker in tickers:
-            ticker = ticker.replace('^', '_')
-            cur.execute(
-            """
-            CREATE TABLE IF NOT EXISTS {0} (
-                date DATE NOT NULL,
-                close float4 NOT NULL,
-                sma_20 float4 NOT NULL,
-                sma_60 float4 NOT NULL,
-                sma_120 float4 NOT NULL
-            )
-            """.format(ticker))
-        cur.close()
-        conn.commit()
-    except (Exception, psycopg2.DatabaseError) as error:
-        print(error)
-    
-def insert_data(ticker, df, conn):
-    try:
-        cur = conn.cursor()
-        ticker = ticker.replace('^', '_')
-        cols = df.columns
-        arg_string = ",".join("('%s', '%s', '%s', '%s', '%s')" % (str(a).split()[0], b, c, d, e) for a, (b, c, d, e) in data_df.iterrows())
-
-        cur.execute(
-            """
-            INSERT INTO {0}(date, close, sma_20, sma_60, sma_120)
-            VALUES
-            """.format(ticker) + arg_string
+    for idx, row in df.iterrows():
+        if idx + interval >= df.index[-1]:
+            break
+        df_comp = np.append(
+            df_comp, round(df["Adj Close"][idx] - df["Adj Close"][idx + interval], 2)
         )
-        conn.commit()
-        cur.close()
-    except (Exception, psycopg2.DatabaseError) as error:
-        print(error)
-    finally:
-        if conn is not None:
-            conn.close()
 
-if __name__ == "__main__":
-    tickers = ["^KS11"]
-    start = "2017-01-01"
+    return pd.Series(df_comp)
+
+
+def main():
+    # set configuration for getting data
+    # tickers = ["^KS11"]
+    tickers = extract_etfs_by_vol()
+    start = "2021-01-01"
     end = str(dt.datetime.now()).split()[0]
     short_window = 20
     middle_window = 60
     long_window = 120
 
+    # get data
+    # 20일, 60일, 90일, 120일 동안 하락한 or 상승한 자산
     data = yf.download(tickers=tickers, start=start, end=end)
-    data_df = data.drop(columns=['Open', 'High', 'Low', 'Close', 'Volume'])
-    data_df['SMA20'] = data_df['Adj Close'].rolling(window=short_window).mean()
-    data_df['SMA60'] = data_df['Adj Close'].rolling(window=middle_window).mean()
-    data_df['SMA120'] = data_df['Adj Close'].rolling(window=long_window).mean()
-    data_df = data_df.dropna()
-    data_df = data_df.round(decimals=2)
-    
+    df = data.drop(columns=["Open", "High", "Low", "Close", "Volume"])
+    df = df.droplevel(level=0, axis=1)
+    df = df.round(2)
+
     conn = connect()
     create_tables(tickers, conn)
-    insert_data(tickers[0], data_df, conn)
+
+    for ticker in tickers:
+        ticker_df = pd.DataFrame(data=df[ticker])
+        ticker_df.set_axis(["Adj Close"], axis="columns", inplace=True)
+        ticker_df["SMA20"] = ticker_df["Adj Close"].rolling(window=short_window).mean()
+        ticker_df["SMA60"] = ticker_df["Adj Close"].rolling(window=middle_window).mean()
+        ticker_df["SMA120"] = ticker_df["Adj Close"].rolling(window=long_window).mean()
+        ticker_df.dropna(inplace=True)
+
+        insert_data(ticker, ticker_df, conn)
+
+    # 나중에 차이 구할때 쓰임
+    # df["comp_20"] = get_comp(df, interval=short_window)
+    # df["comp_60"] = get_comp(df, interval=middle_window)
+    # df["comp_120"] = get_comp(df, interval=long_window)
+    # df.reset_index(inplace=True)
+
+    conn.close()
+
+
+if __name__ == "__main__":
+    main()
