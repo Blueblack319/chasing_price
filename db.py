@@ -39,7 +39,7 @@ def create_tables(tickers, conn):
             cur.execute(
                 """
             CREATE TABLE IF NOT EXISTS {0} (
-                date DATE NOT NULL,
+                close_date DATE NOT NULL,
                 close float4 NOT NULL,
                 sma_20 float4 NOT NULL,
                 sma_60 float4 NOT NULL,
@@ -67,7 +67,7 @@ def insert_data(ticker, df, conn):
 
         cur.execute(
             """
-            INSERT INTO {0}(date, close, sma_20, sma_60, sma_120)
+            INSERT INTO {0}(close_date, close, sma_20, sma_60, sma_120)
             VALUES
             """.format(
                 ticker
@@ -82,3 +82,19 @@ def insert_data(ticker, df, conn):
     #     if conn is not None:
     #         conn.close()
 
+
+def query_data(ticker, conn, start_date, end_date):
+    query_sql = f"SELECT close FROM {ticker} WHERE close_date BETWEEN '{start_date}' AND '{end_date}' ORDER BY close_date DESC"
+
+    try:
+        cur = conn.cursor()
+        print("Query data...")
+        cur.execute(query_sql)
+        rows = cur.fetchall()
+        cur.close()
+        return rows
+    except (Exception, psycopg2.DatabaseError) as error:
+        print(error)
+    # finally:
+    #     if conn is not None:
+    #         conn.close()
