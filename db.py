@@ -60,7 +60,6 @@ def insert_ticker_data(ticker, df, conn):
     try:
         cur = conn.cursor()
         ticker = ticker.replace("^", "_")
-        cols = df.columns
         arg_string = ",".join(
             "('%s', '%s', '%s', '%s', '%s')" % (str(a).split()[0], b, c, d, e)
             for a, (b, c, d, e) in df.iterrows()
@@ -77,6 +76,34 @@ def insert_ticker_data(ticker, df, conn):
         )
         conn.commit()
         cur.close()
+    except (Exception, psycopg2.DatabaseError) as error:
+        print(error)
+    # finally:
+    #     if conn is not None:
+    #         conn.close()
+
+
+def insert_comp_data(ticker, df, conn):
+    try:
+        cur = conn.cursor()
+        ticker = ticker.replace("^", "_")
+        cols = df.columns
+        print(cols)
+        cols_string = ", ".join(cols)
+    #     arg_string = ",".join(
+    #         "('%s', '%s', '%s', '%s', '%s')" % (str(a).split()[0], b, c, d, e)
+    #         for a, (b, c, d, e) in df.iterrows()
+    #     )
+
+    #     cur.execute(
+    #         f"""
+    #         INSERT INTO {ticker}(close_date, close, sma_20, sma_60, sma_120)
+    #         VALUES
+    #         """
+    #         + arg_string
+    #     )
+    #     conn.commit()
+    #     cur.close()
     except (Exception, psycopg2.DatabaseError) as error:
         print(error)
     # finally:
@@ -113,4 +140,42 @@ def query_data(ticker, conn, start_date, end_date):
     #         conn.close()
 
 
-# def make_comp():
+def add_column(conn, table, **column_info):
+    name = table.replace("^", "_")
+
+    try:
+        cur = conn.cursor()
+        print(f"Add columns into {name} table...")
+
+        for col_name, col_type in column_info.items():
+            cur.execute(
+                f"""
+                ALTER TABLE {name} 
+                ADD COLUMN IF NOT EXISTS {col_name} {col_type};
+                """
+            )
+
+        cur.close()
+        conn.commit()
+    except (Exception, psycopg2.DatabaseError) as error:
+        print(error)
+
+
+def show_tables_name(conn):
+    try:
+        cur = conn.cursor()
+        print(f"Get tables' name...")
+
+        cur.execute(
+            f"""
+            SELECT table_name
+            FROM information_schema.tables 
+            WHERE table_schema= 'public' 
+            ORDER BY table_name;
+            """
+        )
+        tables = cur.fetchall()
+        cur.close()
+        return tables
+    except (Exception, psycopg2.DatabaseError) as error:
+        print(error)
