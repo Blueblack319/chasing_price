@@ -34,8 +34,8 @@ def main():
     conn = connect()
 
     """Get tables' name"""
-    table_list = show_tables_name(conn)
-    tickers = [name[0] for name in table_list]
+    # table_list = show_tables_name(conn)
+    # tickers = [name[0] for name in table_list]
 
     """Create tables"""
     # create_tables(tickers, conn)
@@ -61,7 +61,7 @@ def main():
     #     add_column(
     #         conn, ticker, comp_to_20="float4", comp_to_60="float4", comp_to_120="float4"
     #     )
-    """Insert compared data"""
+    """Update compared data"""
     update_comp_data("agg", df_query, conn)
 
     conn.close()

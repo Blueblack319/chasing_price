@@ -88,24 +88,18 @@ def update_comp_data(ticker, df, conn):
         cur = conn.cursor()
         ticker = ticker.replace("^", "_")
         cols = df.columns[1:]
-        # print(cols)
-        # set_string = ",".join(f"" for )
-        # arg_string = ",".join(f"({a}, {b}, {c})" for a, b, c in df.to_numpy())
-
-        # cur.execute(
-        #     f"""
-        #     INSERT INTO {ticker}({cols_string})
-        #     VALUES
-        #     """
-        #     + arg_string
-        #     + f"""
-        #     WHERE close_date >= {start}
-        #     """
-        # )
 
         for date, comp_20, comp_60, comp_120 in df.to_numpy():
-            print(row)
-        # conn.commit()
+            # date = date.strftime("%Y-%m-%d")
+            print(type(date))
+            cur.execute(
+                f""" UPDATE {ticker}
+                SET comp_to_20 = {comp_20},
+                    comp_to_60 = {comp_60},
+                    comp_to_120 = {comp_120}
+                WHERE close_date::date = '{date}'"""
+            )
+        conn.commit()
         cur.close()
     except (Exception, psycopg2.DatabaseError) as error:
         print(error)
