@@ -83,27 +83,30 @@ def insert_ticker_data(ticker, df, conn):
     #         conn.close()
 
 
-def insert_comp_data(ticker, df, conn):
+def update_comp_data(ticker, df, conn):
     try:
         cur = conn.cursor()
         ticker = ticker.replace("^", "_")
-        cols = df.columns
-        print(cols)
-        cols_string = ", ".join(cols)
-    #     arg_string = ",".join(
-    #         "('%s', '%s', '%s', '%s', '%s')" % (str(a).split()[0], b, c, d, e)
-    #         for a, (b, c, d, e) in df.iterrows()
-    #     )
+        cols = df.columns[1:]
+        # print(cols)
+        # set_string = ",".join(f"" for )
+        # arg_string = ",".join(f"({a}, {b}, {c})" for a, b, c in df.to_numpy())
 
-    #     cur.execute(
-    #         f"""
-    #         INSERT INTO {ticker}(close_date, close, sma_20, sma_60, sma_120)
-    #         VALUES
-    #         """
-    #         + arg_string
-    #     )
-    #     conn.commit()
-    #     cur.close()
+        # cur.execute(
+        #     f"""
+        #     INSERT INTO {ticker}({cols_string})
+        #     VALUES
+        #     """
+        #     + arg_string
+        #     + f"""
+        #     WHERE close_date >= {start}
+        #     """
+        # )
+
+        for date, comp_20, comp_60, comp_120 in df.to_numpy():
+            print(row)
+        # conn.commit()
+        cur.close()
     except (Exception, psycopg2.DatabaseError) as error:
         print(error)
     # finally:

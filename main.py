@@ -6,7 +6,7 @@ from db import (
     query_data,
     add_column,
     show_tables_name,
-    insert_comp_data,
+    update_comp_data,
 )
 import pandas as pd
 
@@ -51,7 +51,10 @@ def main():
     df_query["comp_to_20"] = get_comp(df_query, interval=short_window)
     df_query["comp_to_60"] = get_comp(df_query, interval=middle_window)
     df_query["comp_to_120"] = get_comp(df_query, interval=long_window)
-    df_query.drop(["Date", "Adj Close"], axis=1, inplace=True)
+    df_query.dropna(inplace=True)
+    start_date = df_query["Date"].iat[-1]
+    df_query.drop(["Adj Close"], axis=1, inplace=True)
+    df_query.sort_index(ascending=False, inplace=True)
 
     """Add Columns"""
     # for ticker in tickers:
@@ -59,7 +62,7 @@ def main():
     #         conn, ticker, comp_to_20="float4", comp_to_60="float4", comp_to_120="float4"
     #     )
     """Insert compared data"""
-    insert_comp_data("agg", df_query, conn)
+    update_comp_data("agg", df_query, conn)
 
     conn.close()
 
