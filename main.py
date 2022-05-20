@@ -19,12 +19,11 @@ def main():
     """set configuration for getting data"""
     # tickers = ["^KS11", "AGG"]
     # tickers = extract_etfs_by_vol()
-    start = "2004-01-01"
+    start = "2000-01-01"
     end = str(dt.datetime.now()).split()[0]
     short_window = 20
     middle_window = 60
     long_window = 120
-    column_info = {}
 
     """get data"""
     # 20일, 60일, 90일, 120일 동안 하락한 or 상승한 자산
@@ -34,8 +33,8 @@ def main():
     conn = connect()
 
     """Get tables' name"""
-    # table_list = show_tables_name(conn)
-    # tickers = [name[0] for name in table_list]
+    table_list = show_tables_name(conn)
+    tickers = [name[0] for name in table_list]
 
     """Create tables"""
     # create_tables(tickers, conn)
@@ -44,17 +43,17 @@ def main():
     # insert_tickers_data(tickers, conn)
 
     """Query data"""
-    data = query_data("agg", conn, start, end)
+    # data = query_data("agg", conn, start, end)
 
     """나중에 차이 구할때 쓰임"""
-    df_query = pd.DataFrame(data).set_axis(["Date", "Adj Close"], axis=1)
-    df_query["comp_to_20"] = get_comp(df_query, interval=short_window)
-    df_query["comp_to_60"] = get_comp(df_query, interval=middle_window)
-    df_query["comp_to_120"] = get_comp(df_query, interval=long_window)
-    df_query.dropna(inplace=True)
-    start_date = df_query["Date"].iat[-1]
-    df_query.drop(["Adj Close"], axis=1, inplace=True)
-    df_query.sort_index(ascending=False, inplace=True)
+    # df_query = pd.DataFrame(data).set_axis(["Date", "Adj Close"], axis=1)
+    # df_query["comp_to_20"] = get_comp(df_query, interval=short_window)
+    # df_query["comp_to_60"] = get_comp(df_query, interval=middle_window)
+    # df_query["comp_to_120"] = get_comp(df_query, interval=long_window)
+    # df_query.dropna(inplace=True)
+    # start_date = df_query["Date"].iat[-1]
+    # df_query.drop(["Adj Close"], axis=1, inplace=True)
+    # df_query.sort_index(ascending=False, inplace=True)
 
     """Add Columns"""
     # for ticker in tickers:
@@ -62,7 +61,21 @@ def main():
     #         conn, ticker, comp_to_20="float4", comp_to_60="float4", comp_to_120="float4"
     #     )
     """Update compared data"""
-    update_comp_data("agg", df_query, conn)
+    # update_comp_data("agg", df_query, conn)
+
+    """Upate all data"""
+    for ticker in tickers:
+        data = query_data(ticker, conn, start, end)
+
+        df_query = pd.DataFrame(data).set_axis(["Date", "Adj Close"], axis=1)
+        df_query["comp_to_20"] = get_comp(df_query, interval=short_window)
+        df_query["comp_to_60"] = get_comp(df_query, interval=middle_window)
+        df_query["comp_to_120"] = get_comp(df_query, interval=long_window)
+        df_query.dropna(inplace=True)
+        df_query.drop(["Adj Close"], axis=1, inplace=True)
+        df_query.sort_index(ascending=False, inplace=True)
+
+        update_comp_data(ticker, df_query, conn)
 
     conn.close()
 

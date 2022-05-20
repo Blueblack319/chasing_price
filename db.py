@@ -88,10 +88,9 @@ def update_comp_data(ticker, df, conn):
         cur = conn.cursor()
         ticker = ticker.replace("^", "_")
         cols = df.columns[1:]
+        print(f"Update {ticker}...")
 
         for date, comp_20, comp_60, comp_120 in df.to_numpy():
-            # date = date.strftime("%Y-%m-%d")
-            print(type(date))
             cur.execute(
                 f""" UPDATE {ticker}
                 SET comp_to_20 = {comp_20},
@@ -125,7 +124,7 @@ def query_data(ticker, conn, start_date, end_date):
 
     try:
         cur = conn.cursor()
-        print("Query data...")
+        print(f"Query {ticker}...")
         cur.execute(query_sql)
         rows = cur.fetchall()
         cur.close()
