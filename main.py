@@ -14,12 +14,18 @@ import pandas as pd
 from get_yfin import get_close_val
 from tools import get_comp
 
+""" 
+TODO:
+1. 특정 기간을 입력하면 그 기간 사이에서 gainer와 looser를 구하기
+2. 특정 자산이 오를때와 내릴때 다른 자산들의 변화를 추적
+"""
+
 
 def main():
     """set configuration for getting data"""
     # tickers = ["^KS11", "AGG"]
     # tickers = extract_etfs_by_vol()
-    start = "2000-01-01"
+    start = "2021-01-01"
     end = str(dt.datetime.now()).split()[0]
     short_window = 20
     middle_window = 60
@@ -43,9 +49,14 @@ def main():
     # insert_tickers_data(tickers, conn)
 
     """Query data"""
-    # data = query_data("agg", conn, start, end)
+    data = query_data("agg", conn, start, end)
 
     """나중에 차이 구할때 쓰임"""
+    """
+    Interval 20 : 1달차
+    Interval 60 : 3달차
+    Interval 120 : 6달차
+    # """
     # df_query = pd.DataFrame(data).set_axis(["Date", "Adj Close"], axis=1)
     # df_query["comp_to_20"] = get_comp(df_query, interval=short_window)
     # df_query["comp_to_60"] = get_comp(df_query, interval=middle_window)
@@ -64,18 +75,18 @@ def main():
     # update_comp_data("agg", df_query, conn)
 
     """Upate all data"""
-    for ticker in tickers:
-        data = query_data(ticker, conn, start, end)
+    # for ticker in tickers:
+    #     data = query_data(ticker, conn, start, end)
 
-        df_query = pd.DataFrame(data).set_axis(["Date", "Adj Close"], axis=1)
-        df_query["comp_to_20"] = get_comp(df_query, interval=short_window)
-        df_query["comp_to_60"] = get_comp(df_query, interval=middle_window)
-        df_query["comp_to_120"] = get_comp(df_query, interval=long_window)
-        df_query.dropna(inplace=True)
-        df_query.drop(["Adj Close"], axis=1, inplace=True)
-        df_query.sort_index(ascending=False, inplace=True)
+    #     df_query = pd.DataFrame(data).set_axis(["Date", "Adj Close"], axis=1)
+    #     df_query["comp_to_20"] = get_comp(df_query, interval=short_window)
+    #     df_query["comp_to_60"] = get_comp(df_query, interval=middle_window)
+    #     df_query["comp_to_120"] = get_comp(df_query, interval=long_window)
+    #     df_query.dropna(inplace=True)
+    #     df_query.drop(["Adj Close"], axis=1, inplace=True)
+    #     df_query.sort_index(ascending=False, inplace=True)
 
-        update_comp_data(ticker, df_query, conn)
+    #     update_comp_data(ticker, df_query, conn)
 
     conn.close()
 
